@@ -15,12 +15,14 @@
  * - The last 2 bytes are the f_cost (16 bit unsigned integer)
  */
 
+#define A_STAR_ERROR 0xEEEEEEEE
+#define A_STAR_ERROR_16 0xEEEE
+
 #define A_STAR_STATE_MASK 0x000000FF
 #define A_STAR_FCOST_MASK 0xFFFF0000
 
 #define A_STAR_STATE_MASK_NEGATE 0xFFFFFF00
 #define A_STAR_FCOST_MASK_NEGATE 0x0000FFFF
-
 
 #define A_STAR_NODE_ENABLED 0xFFFF00FF
 #define A_STAR_NODE_BLOCKED 0xFFFF0000
@@ -31,9 +33,16 @@
 class A_star
 {
 private:
-    std::uint32_t **map;        // Map points
-    std::uint32_t xs, ys;       // Map resolution (xs*ys must be bounded to be a 32bit unsigned integer)
-    std::uint32_t *px, *py, ps; // Output points after calculation
+    std::uint32_t **map;  // Map points
+    std::uint32_t xs, ys; // Map resolution (xs*ys must be bounded to be a 32bit unsigned integer)
+    /**
+     *
+     * px = list of output points' x coord
+     * py = list of output points' y coord
+     * ps = size of both lists
+     * pl = current last element index (length = pl + 1)
+     */
+    std::uint32_t *px, *py, ps, pl;
 
     /***** Debugging and error checking *****/
 
@@ -44,10 +53,15 @@ private:
 
     /**
      * @brief  Allocate memory for the map
-     * @param  {xs} std::uint32_t : X-Resolution of the map
-     * @param  {ys} std::uint32_t : Y-Resolution of the map
      */
     void _loadmap();
+
+    /**
+     * @brief  Allocate memory for the points
+     * @param  {xs} std::uint32_t : X-Resolution of the points
+     * @param  {ys} std::uint32_t : Y-Resolution of the points
+     */
+    void _loadpnt(std::uint32_t xs, std::uint32_t ys);
 
     /**
      * @brief Free map memory
@@ -76,14 +90,13 @@ private:
      * @param  {f_cost} std::uint32_t : cost of the point (f_cost = g_cost + h_cost)
      */
     void _setcost(std::uint32_t px, std::uint32_t py, std::uint16_t f_cost);
-  
+
     /**
      * @brief Returns true if the node is blocked, false otherwise
      * @param  {xs} std::uint32_t : X coordinate of the point
      * @param  {ys} std::uint32_t : Y coordinate of the point
      */
     bool _isblocked(std::uint32_t px, std::uint32_t py);
-    
 
     /***** Min binary heap definitions *****/
 
