@@ -15,18 +15,20 @@
  * - The last 2 bytes are the f_cost (16 bit unsigned integer)
  */
 
-#define A_STAR_ERROR 0xEEEEEEEE
+#define A_STAR_ERROR 0xFFFFFFFE
 #define A_STAR_ERROR_16 0xEEEE
 
-#define A_STAR_STATE_MASK 0x000000FF
-#define A_STAR_FCOST_MASK 0xFFFF0000
-
-#define A_STAR_STATE_MASK_NEGATE 0xFFFFFF00
+#define A_STAR_STATE_MASK 0b00000000000000000000000000000001
+#define A_STAR_GCOST_MASK 0b00000000000000001111111111111110
+#define A_STAR_FCOST_MASK 0b11111111111111110000000000000000
+                                 
+#define A_STAR_STATE_MASK_NEGATE 0b11111111111111111111111111111110
+#define A_STAR_GCOST_MASK_NEGATE 0b11111111111111110000000000000001
 #define A_STAR_FCOST_MASK_NEGATE 0x0000FFFF
 
-#define A_STAR_NODE_ENABLED 0xFFFF00FF
-#define A_STAR_NODE_BLOCKED 0xFFFF0000
-#define A_STAR_NODE_STARTER 0x000000FF // Starter node must have 0 f_cost
+#define A_STAR_NODE_ENABLED 0b11111111111111110000000000000001
+#define A_STAR_NODE_BLOCKED 0b11111111111111110000000000000000
+#define A_STAR_NODE_STARTER 0b00000000000000000000000000000001 // Starter node must have 0 f_cost
 
 #include <cstdint>
 
@@ -40,9 +42,10 @@ private:
      * px = list of output points' x coord
      * py = list of output points' y coord
      * ps = size of both lists
-     * pl = current last element index (length = pl + 1)
+     * pl = current last element index (length = pl)
+     * plc = current last element index of closed list (length = plc)
      */
-    std::uint32_t *px, *py, ps, pl;
+    std::uint32_t *px, *py, ps, pl, plc;
 
     /***** Debugging and error checking *****/
 
@@ -55,6 +58,9 @@ private:
      * @brief  Allocate memory for the map
      */
     void _loadmap();
+
+    std::uint32_t get_open_list(std::uint32_t px, std::uint32_t py);
+    std::uint32_t get_closed_list(std::uint32_t px, std::uint32_t py);
 
     /**
      * @brief  Allocate memory for the points
@@ -71,7 +77,7 @@ private:
     /**
      * @brief Free all output points
      */
-    void _freepnt(std::uint32_t *ptr);
+    void A_star::_freepnt();
 
     /***** Nodes and map functions *****/
 
@@ -81,7 +87,8 @@ private:
      * @param  {ys} std::uint32_t : Y coordinate of the point
      * @returns The f_cost of the node
      */
-    std::uint16_t _getcost(std::uint32_t px, std::uint32_t py);
+    std::uint16_t _getfcost(std::uint32_t px, std::uint32_t py);
+    std::uint16_t _getgcost(std::uint32_t px, std::uint32_t py);
 
     /**
      * @brief Set cost of the point in the map
@@ -89,7 +96,8 @@ private:
      * @param  {ys} std::uint32_t : Y coordinate of the point
      * @param  {f_cost} std::uint32_t : cost of the point (f_cost = g_cost + h_cost)
      */
-    void _setcost(std::uint32_t px, std::uint32_t py, std::uint16_t f_cost);
+    void _setfcost(std::uint32_t px, std::uint32_t py, std::uint16_t f_cost);
+    void _setgcost(std::uint32_t px, std::uint32_t py, std::uint16_t g_cost);
 
     /**
      * @brief Returns true if the node is blocked, false otherwise
@@ -99,18 +107,24 @@ private:
     bool _isblocked(std::uint32_t px, std::uint32_t py);
 
     /***** Min binary heap definitions *****/
+    /**
+     * @brief Get closed list index
+     */
+    std::uint32_t cl_i(std::uint32_t i);
 
     /**
      * Sink down a node
      * @param {pi} std::uint32_t : index of the point in the list
      */
     void _sink(std::uint32_t pi);
+    void _sink_cl(std::uint32_t pi);
 
     /**
      * Swim up a node
      * @param {pi} std::uint32_t : index of the point in the list
      */
     void _swim(std::uint32_t pi);
+    void _swim_cl(std::uint32_t pi);
 
     /**
      * Add a node
@@ -118,6 +132,7 @@ private:
      * @param {py} std::uint32_t : Y position of the point
      */
     void _add(std::uint32_t px, std::uint32_t py);
+    void _add_cl(std::uint32_t px, std::uint32_t py);
 
     /**
      * Remove a node
@@ -125,6 +140,7 @@ private:
      * @returns The removed node
      */
     std::uint32_t _remove(std::uint32_t pi);
+    std::uint32_t _remove_cl(std::uint32_t pi);
 
     /**
      * Exchange two elements
