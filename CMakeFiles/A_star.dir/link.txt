@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/A_star.dir/main.cc.o -o A_star  pathfinder/libpathfinder.a 

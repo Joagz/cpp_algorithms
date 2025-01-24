@@ -13,10 +13,7 @@ void cout_warn(const char *tag, const char *details)
 #endif
 }
 
-
 void cout_debug(const char *tag, const char *details)
 {
-#ifdef HIGH_VERBOSE_MODE
     printf("INFO (%s): %s\n", tag, details);
-#endif
 }

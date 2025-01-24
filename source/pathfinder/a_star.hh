@@ -6,22 +6,22 @@
 #ifndef A_STAR_ROBALGOR
 #define A_STAR_ROBALGOR
 
-#define A_STAR_BLOCKED false
-#define A_STAR_BLOCKED true
-
 /**
  * Basically each node in the map has information in each position
- * - The first byte is the state (8 bit unsigned integer)
- * - The last 2 bytes are the f_cost (16 bit unsigned integer)
+ * - The first 16 bits correspond to the f_cost of the node
+ * - The following 15 bits correspond to the g_cost of the node
+ * - The last bit sets the enabled/disabled state of the node
  */
 
-#define A_STAR_ERROR 0xFFFFFFFE
-#define A_STAR_ERROR_16 0xEEEE
+// Error code for functions that return std::uint32_t
+#define A_STAR_ERROR_32 0xFFFFFFFF
+// Error code for functions that return std::uint16_t
+#define A_STAR_ERROR_16 0xFFFF
 
 #define A_STAR_STATE_MASK 0b00000000000000000000000000000001
 #define A_STAR_GCOST_MASK 0b00000000000000001111111111111110
 #define A_STAR_FCOST_MASK 0b11111111111111110000000000000000
-                                 
+
 #define A_STAR_STATE_MASK_NEGATE 0b11111111111111111111111111111110
 #define A_STAR_GCOST_MASK_NEGATE 0b11111111111111110000000000000001
 #define A_STAR_FCOST_MASK_NEGATE 0x0000FFFF
@@ -45,12 +45,13 @@ private:
      * pl = current last element index (length = pl)
      * plc = current last element index of closed list (length = plc)
      */
-    std::uint32_t *px, *py, ps, pl, plc;
+    std::uint32_t *px, *py, *pxc, *pyc, ps, pl, plc;
 
     /***** Debugging and error checking *****/
 
-    bool A_star::_check_map();
-    bool A_star::_check_coords(std::uint32_t px, std::uint32_t py);
+    bool _check_map();
+    bool _check_coords(std::uint32_t px, std::uint32_t py);
+    bool check_node(std::uint32_t sx, std::uint32_t sy, std::uint32_t tx, std::uint32_t ty, std::uint16_t gcost);
 
     /***** Memory allocation *****/
 
@@ -59,8 +60,35 @@ private:
      */
     void _loadmap();
 
+    /**
+     * @brief Get an element from the open list
+     * @param  {px} std::uint32_t : X coordinate of the point
+     * @param  {py} std::uint32_t : Y coordinate of the point
+     * @returns The index of the element relative to the list
+     */
     std::uint32_t get_open_list(std::uint32_t px, std::uint32_t py);
+
+    /**
+     * @brief Get an element from the closed list
+     * @param  {px} std::uint32_t : X coordinate of the point
+     * @param  {py} std::uint32_t : Y coordinate of the point
+     * @returns The index of the element relative to the list
+     */
     std::uint32_t get_closed_list(std::uint32_t px, std::uint32_t py);
+
+    /**
+     * @brief check for an element from the open list
+     * @param  {px} std::uint32_t : X coordinate of the point
+     * @param  {py} std::uint32_t : Y coordinate of the point
+     */
+    bool in_open_list(std::uint32_t px, std::uint32_t py);
+
+    /**
+     * @brief check for an element from the closed list
+     * @param  {px} std::uint32_t : X coordinate of the point
+     * @param  {py} std::uint32_t : Y coordinate of the point
+     */
+    bool in_closed_list(std::uint32_t px, std::uint32_t py);
 
     /**
      * @brief  Allocate memory for the points
@@ -77,26 +105,40 @@ private:
     /**
      * @brief Free all output points
      */
-    void A_star::_freepnt();
+    void _freepnt();
 
     /***** Nodes and map functions *****/
 
     /**
-     * @brief Get cost of the point in the map
-     * @param  {xs} std::uint32_t : X coordinate of the point
-     * @param  {ys} std::uint32_t : Y coordinate of the point
+     * @brief Get f_cost of the point in the map
+     * @param  {px} std::uint32_t : X coordinate of the point
+     * @param  {py} std::uint32_t : Y coordinate of the point
      * @returns The f_cost of the node
      */
     std::uint16_t _getfcost(std::uint32_t px, std::uint32_t py);
+
+    /**
+     * @brief Get g_cost of the point in the map
+     * @param  {px} std::uint32_t : X coordinate of the point
+     * @param  {py} std::uint32_t : Y coordinate of the point
+     * @returns The f_cost of the node
+     */
     std::uint16_t _getgcost(std::uint32_t px, std::uint32_t py);
 
     /**
-     * @brief Set cost of the point in the map
-     * @param  {xs} std::uint32_t : X coordinate of the point
-     * @param  {ys} std::uint32_t : Y coordinate of the point
+     * @brief Set f_cost of the point in the map
+     * @param  {px} std::uint32_t : X coordinate of the point
+     * @param  {py} std::uint32_t : Y coordinate of the point
      * @param  {f_cost} std::uint32_t : cost of the point (f_cost = g_cost + h_cost)
      */
     void _setfcost(std::uint32_t px, std::uint32_t py, std::uint16_t f_cost);
+
+    /**
+     * @brief Set g_cost of the point in the map
+     * @param  {px} std::uint32_t : X coordinate of the point
+     * @param  {py} std::uint32_t : Y coordinate of the point
+     * @param  {g_cost} std::uint32_t : g_cost of the point
+     */
     void _setgcost(std::uint32_t px, std::uint32_t py, std::uint16_t g_cost);
 
     /**
@@ -107,10 +149,6 @@ private:
     bool _isblocked(std::uint32_t px, std::uint32_t py);
 
     /***** Min binary heap definitions *****/
-    /**
-     * @brief Get closed list index
-     */
-    std::uint32_t cl_i(std::uint32_t i);
 
     /**
      * Sink down a node
@@ -152,7 +190,7 @@ private:
 public:
     A_star() {};
     A_star(std::uint32_t xs, std::uint32_t ys);
-    ~A_star();
+    ~A_star() ;
 
     /**
      * @brief  Sets tile state (A_STAR_BLOCKED/A_STAR_UNBLOCKED)

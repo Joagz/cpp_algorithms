@@ -1,0 +1,2 @@
+/usr/bin/ar qc libpathfinder.a CMakeFiles/pathfinder.dir/a_star.cc.o CMakeFiles/pathfinder.dir/ioutils.cc.o
+/usr/bin/ranlib libpathfinder.a
